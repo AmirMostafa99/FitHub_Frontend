@@ -1,0 +1,31 @@
+<div class="filter-panel">
+  <h2 class="filter-title">Filters</h2>
+
+  <div class="filter-section">
+    <label class="filter-label">Location</label>
+    <select class="filter-select" name="location" [(ngModel)]="selectedLocation">
+      <option *ngFor="let loc of locations" [value]="loc">{{ loc }}</option>
+    </select>
+  </div>
+
+  <div class="filter-section">
+    <label class="filter-label">Rating</label>
+    <div class="rating-options">
+      <button
+        *ngFor="let rating of ratings"
+        type="button"
+        class="rating-btn"
+        [class.selected]="isRatingSelected(rating)"
+        (click)="selectRating(rating)"
+      >
+        <span class="star">⭐</span>
+        <span *ngIf="rating < 5" class="star">⭐</span>
+        <span *ngIf="rating < 4" class="star">⭐</span>
+        <span *ngIf="rating < 3" class="star">⭐</span>
+        <span *ngIf="rating < 2" class="star">⭐</span>
+      </button>
+    </div>
+  </div>
+
+  <button class="apply-btn" (click)="applyFilters()">Apply Filters</button>
+</div>

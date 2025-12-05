@@ -1,3 +1,30 @@
 import { Routes } from '@angular/router';
+import { HomeComponent } from './features/landing/components/home/home.component';
+import { LoginComponent } from './features/auth/components/login/login.component';
+import { RegisterComponent } from './features/auth/components/register/register.component';
+import { BusinessRegisterComponent } from './features/auth/components/business-register/business-register.component';
+import { ForgotPasswordComponent } from './features/auth/components/forgot-password/forgot-password.component';
+import { VerifyOtpComponent } from './features/auth/components/verify-otp/verify-otp.component';
+import { ResetPasswordComponent } from './features/auth/components/reset-password/reset-password.component';
+import { FindGymComponent } from './features/user/components/gyms/find-gym.component';
+import { GymDetailComponent } from './features/user/components/gyms/gym-detail/gym-detail.component';
+import { DashboardComponent } from './features/user/components/dashboard/dashboard.component';
+import { ProfileComponent } from './features/user/components/profile/profile.component';
+import { BookingConfirmationComponent } from './features/user/components/bookings/booking-confirmation.component';
 
-export const routes: Routes = [];
+export const routes: Routes = [
+  { path: '', component: HomeComponent },
+  { path: 'login', component: LoginComponent },
+  { path: 'signup', component: RegisterComponent },
+  { path: 'business-signup', component: BusinessRegisterComponent },
+  { path: 'forgot-password', component: ForgotPasswordComponent },
+  { path: 'verify-otp', component: VerifyOtpComponent },
+  { path: 'reset-password', component: ResetPasswordComponent },
+  { path: 'find-gym', component: FindGymComponent },
+  { path: 'gym/:id', component: GymDetailComponent },
+  { path: 'dashboard', component: DashboardComponent },
+  { path: 'my-schedule', component: DashboardComponent },
+  { path: 'account', component: ProfileComponent },
+  { path: 'booking-confirmation', component: BookingConfirmationComponent },
+  { path: '**', redirectTo: '' },
+];
