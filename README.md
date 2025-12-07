@@ -1,59 +1,103 @@
-# FitHub
+# FitHub Platform 🏋️‍♂️
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.5.
+FitHub is a multi-role fitness aggregation platform that enables users to purchase credits, book gym visits, check in at gym branches, and allows gym owners to manage branches, staff, and earnings with full financial settlement handling by the system administrator.
 
-## Development server
+---
 
-To start a local development server, run:
+## 🛠 Tech Stack
 
-```bash
-ng serve
-```
+- Frontend: **Angular v20**
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+---
 
-## Code scaffolding
+## 🚀 System Overview
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+FitHub operates using a **credits-based economy**:
 
-```bash
-ng generate component component-name
-```
+- Users purchase credits from the platform.
+- Gyms define visit costs internally.
+- Credits are deducted only when a user successfully checks in.
+- Monthly settlements transfer earnings to gyms.
+- The platform earns from both user markups and gym payout margins.
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+---
 
-```bash
-ng generate --help
-```
+## 👤 User Roles
 
-## Building
+### 1. Normal User
+- Register and manage account
+- Browse and filter gyms
+- View gym details and amenities
+- Book and cancel visits
+- Purchase credits using card payment
+- View credit balance and booking history
+- Leave gym reviews
 
-To build the project run:
+### 2. Gym Owner
+- Submit business documents and await approval
+- Manage gym branches
+- Manage staff accounts
+- Create internal subscription plans
+- View bookings, reports, and earnings
 
-```bash
-ng build
-```
+### 3. Branch Staff
+- Log in to branch dashboard
+- Validate bookings using booking codes
+- Accept or reject check-ins
+- View visit logs
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+### 4. Super Admin
+- Approve or reject gym applications
+- Manage users and gyms
+- Handle monthly financial settlements
+- Export system reports
+- View global statistics
 
-## Running unit tests
+---
 
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+## ✅ Core Functional Features
 
-```bash
-ng test
-```
+### Authentication & Registration
+- Email & password login
+- Business registration and verification for gym owners
+- Admin approval workflow
 
-## Running end-to-end tests
+### Credits System
+- Online credit purchase
+- Instant wallet crediting
+- Credits deducted only after successful check-in
+- No deduction for cancellations or no-shows
 
-For end-to-end (e2e) testing, run:
+### Booking System
+- Search and filter gyms
+- Book available time slots
+- Cancel bookings anytime before check-in
+- Unique booking code generation
+- Manual code validation at branch
 
-```bash
-ng e2e
-```
+### Gym Management
+- Branch creation and management
+- Amenities & schedules
+- Staff invitations and management
+- Booking & visit statistics
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+### Admin Operations
+- User & gym management
+- Monthly settlement calculation
+- Payout status tracking
+- CSV report exporting
 
-## Additional Resources
+### Notifications
+- Registration
+- Booking confirmation
+- Cancellation
+- Payment receipts
+- Password reset
+- Gym application decisions
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+---
+
+## 📬 Contact
+
+For inquiries or contributions:
+- **Email:** amir.mustafa.ibrahem@gmail.com
