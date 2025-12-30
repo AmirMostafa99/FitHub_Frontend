@@ -1,14 +1,19 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { HeaderComponent } from '../../../../shared/components/header/header.component';
+import { UsersService, User } from '../../../../services/users.service';
+import { WalletService } from '../../../../services/wallet.service';
 
 interface Transaction {
+  id: number;
   date: string;
   description: string;
-  amountPaid: string;
-  credits: string;
+  amountPaid: number;
+  credits: number;
+  type: string;
+  isPositive: boolean;
 }
 
 @Component({
@@ -19,67 +24,71 @@ interface Transaction {
   styleUrls: ['./billing.component.css'],
 })
 export class BillingComponent implements OnInit {
-  currentCredits: number = 12;
+  currentUser: User | null = null;
   searchQuery: string = '';
   currentPage: number = 1;
   itemsPerPage: number = 5;
-  totalItems: number = 20;
+  totalItems: number = 0;
 
-  transactions: Transaction[] = [
-    {
-      date: 'Oct 15, 2023',
-      description: 'Pro Plan (50 Credits)',
-      amountPaid: '$49.99',
-      credits: '+50',
-    },
-    {
-      date: 'Sep 15, 2023',
-      description: 'Pro Plan (50 Credits)',
-      amountPaid: '$49.99',
-      credits: '+50',
-    },
-    {
-      date: 'Aug 15, 2023',
-      description: 'Starter Plan (20 Credits)',
-      amountPaid: '$24.99',
-      credits: '+20',
-    },
-    {
-      date: 'Jul 15, 2023',
-      description: 'Starter Plan (20 Credits)',
-      amountPaid: '$24.99',
-      credits: '+20',
-    },
-    {
-      date: 'Jun 10, 2023',
-      description: 'Top-up (10 Credits)',
-      amountPaid: '$15.00',
-      credits: '+10',
-    },
-    {
-      date: 'May 20, 2023',
-      description: 'Pro Plan (50 Credits)',
-      amountPaid: '$49.99',
-      credits: '+50',
-    },
-    {
-      date: 'Apr 10, 2023',
-      description: 'Starter Plan (20 Credits)',
-      amountPaid: '$24.99',
-      credits: '+20',
-    },
-    {
-      date: 'Mar 5, 2023',
-      description: 'Top-up (15 Credits)',
-      amountPaid: '$20.00',
-      credits: '+15',
-    },
-  ];
-
+  transactions: Transaction[] = [];
   paginatedTransactions: Transaction[] = [];
+  isLoading: boolean = false;
+  userBalance: number = 0;
+
+  constructor(
+    private usersService: UsersService,
+    private walletService: WalletService,
+    private router: Router
+  ) { }
 
   ngOnInit(): void {
-    this.updatePaginatedTransactions();
+    this.loadUserProfile();
+    this.loadTransactions();
+    this.loadWalletBalance();
+  }
+
+  loadTransactions(): void {
+    this.isLoading = true;
+    this.walletService.getTransactions().subscribe({
+      next: (response) => {
+        if (response.isSuccess && response.data) {
+          this.transactions = response.data;
+          this.totalItems = this.transactions.length;
+          this.updatePaginatedTransactions();
+        }
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading transactions:', error);
+        this.isLoading = false;
+      }
+    });
+  }
+
+  loadWalletBalance(): void {
+    this.usersService.getWalletBalance().subscribe({
+      next: (response) => {
+        if (response.isSuccess && response.data) {
+          this.userBalance = response.data.balance;
+        }
+      },
+      error: (error) => {
+        console.error('Error loading wallet balance:', error);
+      },
+    });
+  }
+
+  loadUserProfile(): void {
+    this.usersService.getMe().subscribe({
+      next: (response) => {
+        if (response.isSuccess && response.data) {
+          this.currentUser = response.data;
+        }
+      },
+      error: (error) => {
+        console.error('Error loading profile:', error);
+      }
+    });
   }
 
   updatePaginatedTransactions(): void {
@@ -107,13 +116,17 @@ export class BillingComponent implements OnInit {
     this.goToPage(this.currentPage + 1);
   }
 
-  onRecharge(): void {
-    console.log('Recharge button clicked');
-    // TODO: Implement recharge functionality
+  logout(): void {
+    // Clear authentication data
+    localStorage.removeItem('fitHubToken');
+    localStorage.removeItem('fitHubUser');
+
+    // Navigate to login page
+    this.router.navigate(['/login']);
   }
 
-  logout(): void {
-    console.log('Log out clicked');
-    // TODO: Implement logout functionality
+  goToRecharge(): void {
+    this.router.navigate(['/choose-plan-payment']);
   }
 }
+

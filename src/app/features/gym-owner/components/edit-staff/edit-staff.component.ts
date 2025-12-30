@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { StaffService, StaffMember, UpdateStaffRequest } from '../../../../services/staff.service';
+import { EGYPT_CITIES } from '../../../../shared/data/cities';
 
 @Component({
   selector: 'app-edit-staff',
@@ -12,11 +13,12 @@ import { StaffService, StaffMember, UpdateStaffRequest } from '../../../../servi
   styleUrls: ['./edit-staff.component.css']
 })
 export class EditStaffComponent implements OnInit {
-  
+
   staffId: number = 0;
   isLoading: boolean = true;
   isSaving: boolean = false;
   loadError: string | null = null;
+  cities = EGYPT_CITIES;
 
   // Form Data
   fullName: string = '';
@@ -30,11 +32,11 @@ export class EditStaffComponent implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     private staffService: StaffService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     const staffIdParam = this.route.snapshot.paramMap.get('id');
-    
+
     if (staffIdParam) {
       this.staffId = parseInt(staffIdParam);
       console.log('Staff ID:', this.staffId);
@@ -52,7 +54,7 @@ export class EditStaffComponent implements OnInit {
     this.staffService.getStaffMember(this.staffId).subscribe({
       next: (staff: StaffMember) => {
         console.log('Staff data loaded:', staff);
-        
+
         // Fill form with staff data
         this.fullName = staff.fullName;
         this.email = staff.email;
@@ -60,7 +62,7 @@ export class EditStaffComponent implements OnInit {
         this.city = staff.city;
         this.role = staff.role || '';
         this.status = staff.status;
-        
+
         this.isLoading = false;
       },
       error: (error) => {
@@ -113,6 +115,7 @@ export class EditStaffComponent implements OnInit {
       fullName: this.fullName.trim(),
       email: this.email.trim(),
       phone: this.phone.trim(),
+      city: this.city ? this.city.trim() : '',
       role: this.role,
       status: this.status
     };

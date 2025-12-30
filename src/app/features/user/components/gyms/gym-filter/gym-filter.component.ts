@@ -1,6 +1,7 @@
 import { CommonModule, NgFor } from '@angular/common';
 import { Component, EventEmitter, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { EGYPT_CITIES } from '../../../../../shared/data/cities';
 
 export interface FilterChange {
   location: string;
@@ -20,18 +21,7 @@ export class GymFilterComponent {
   selectedLocation = '';
   selectedRating = 0;
 
-  locations = [
-    'Cairo (Al Qāhirah)',
-    'Alexandria (Al Iskandariyah)',
-    'Giza',
-    'Shubra El-Kheima',
-    'Port Said',
-    'Suez',
-    'Luxor',
-    'Aswan',
-    'Ismailia',
-    'Tanta',
-  ];
+  locations = EGYPT_CITIES;
 
   ratings = [5, 4, 3, 2, 1];
 
@@ -47,6 +37,10 @@ export class GymFilterComponent {
   }
 
   selectRating(rating: number): void {
-    this.selectedRating = rating;
+    if (this.selectedRating === rating) {
+      this.selectedRating = 0;
+    } else {
+      this.selectedRating = rating;
+    }
   }
 }

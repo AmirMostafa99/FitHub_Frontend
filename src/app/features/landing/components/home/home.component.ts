@@ -4,6 +4,7 @@ import { Router, RouterModule } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { AuthService } from '../../../../features/auth/services/auth.service';
+import { FooterComponent } from '../../../../shared/components/footer/footer.component';
 
 type ServiceIcon = 'location' | 'plan' | 'ticket';
 
@@ -27,16 +28,25 @@ interface PlanCard {
   featured?: boolean;
 }
 
+import { WalletService } from '../../../../services/wallet.service';
+
+import { FormsModule } from '@angular/forms';
+
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, FooterComponent, FormsModule],
   templateUrl: './home.component.html',
   styleUrl: './home.component.css',
 })
 export class HomeComponent implements OnInit, OnDestroy {
   isLoggedIn = false;
   private destroy$ = new Subject<void>();
+
+  // Contact Form
+  contactName = '';
+  contactEmail = '';
+  contactMessage = '';
 
   readonly navLinks: NavLink[] = [
     { label: 'Find Gym', href: '/find-gym', isRoute: true },
@@ -63,18 +73,33 @@ export class HomeComponent implements OnInit, OnDestroy {
     },
   ];
 
-  readonly plans: PlanCard[] = [
-    { name: 'Basic', price: 250, credits: 250 },
-    { name: 'Premium', price: 500, credits: 500, featured: true },
-    { name: 'Gold', price: 800, credits: 800 },
-  ];
+  plans: PlanCard[] = [];
 
-  readonly currentYear = new Date().getFullYear();
-
-  constructor(private router: Router, private authService: AuthService) {}
+  constructor(
+    private router: Router,
+    private authService: AuthService,
+    private walletService: WalletService
+  ) { }
 
   ngOnInit(): void {
     this.checkAuthStatus();
+    this.loadPlans();
+  }
+
+  loadPlans() {
+    this.walletService.getAllFitHubPlans().subscribe({
+      next: (res) => {
+        if (res.isSuccess && res.data) {
+          this.plans = res.data.map((p: any) => ({
+            name: p.name,
+            price: p.price,
+            credits: p.creditsValue,
+            featured: p.name === 'Premium' // Auto-highlight Premium
+          }));
+        }
+      },
+      error: (err) => console.error('Failed to load plans', err)
+    });
   }
 
   ngOnDestroy(): void {
@@ -106,5 +131,16 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.authService.logout();
     this.isLoggedIn = false;
     this.router.navigate(['/']);
+  }
+
+  sendMessage(): void {
+    if (this.contactName && this.contactEmail && this.contactMessage) {
+      alert('we receve your commit and we will contact you');
+      this.contactName = '';
+      this.contactEmail = '';
+      this.contactMessage = '';
+    } else {
+      alert('Please fill in all fields');
+    }
   }
 }

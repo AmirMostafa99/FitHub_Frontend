@@ -1,13 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-
-interface Booking {
-  user: string;
-  branch: string;
-  dateTime: string;
-  status: 'Completed' | 'Confirmed' | 'No Show' | 'Cancelled';
-}
+import { BookingsService, Booking } from '../../../../services/bookings.service';
+import { BranchService, BranchData } from '../../../../services/branch.service';
 
 @Component({
   selector: 'app-bookings',
@@ -16,70 +11,122 @@ interface Booking {
   templateUrl: './booking.component.html',
   styleUrls: ['./booking.component.css']
 })
-export class BookingsComponent {
+export class BookingsComponent implements OnInit {
   searchText: string = '';
-  
-  bookings: Booking[] = [
-    {
-      user: 'Alex Johnson',
-      branch: 'Downtown Core',
-      dateTime: 'Oct 24, 2024 - 09:00 AM',
-      status: 'Completed'
-    },
-    {
-      user: 'Samantha Miller',
-      branch: 'Eastside Gym',
-      dateTime: 'Oct 25, 2024 - 11:30 AM',
-      status: 'Confirmed'
-    },
-    {
-      user: 'Michael Chen',
-      branch: 'Westwood Fitness',
-      dateTime: 'Oct 26, 2024 - 02:00 PM',
-      status: 'No Show'
-    },
-    {
-      user: 'Emily Rodriguez',
-      branch: 'Downtown Core',
-      dateTime: 'Oct 26, 2024 - 04:30 PM',
-      status: 'Cancelled'
-    },
-    {
-      user: 'David Lee',
-      branch: 'North Point Center',
-      dateTime: 'Oct 27, 2024 - 08:00 AM',
-      status: 'Confirmed'
-    },
-    {
-      user: 'Jessica White',
-      branch: 'Eastside Gym',
-      dateTime: 'Oct 27, 2024 - 10:00 AM',
-      status: 'Confirmed'
-    },
-    {
-      user: 'Chris Green',
-      branch: 'Downtown Core',
-      dateTime: 'Oct 28, 2024 - 05:00 PM',
-      status: 'Confirmed'
+  bookings: Booking[] = [];
+  allBookings: Booking[] = [];
+  filteredBookings: Booking[] = [];
+  isLoading: boolean = false;
+  error: string | null = null;
+
+  branches: BranchData[] = [];
+  selectedBranch: BranchData | null = null;
+
+  showFilterMenu: boolean = false;
+  selectedStatus: string | null = null;
+  uniqueStatuses: string[] = [];
+
+  constructor(
+    private bookingsService: BookingsService,
+    private branchService: BranchService
+  ) { }
+
+  ngOnInit(): void {
+    this.loadBranches();
+  }
+
+  loadBranches(): void {
+    this.isLoading = true;
+    this.branchService.getAllBranches().subscribe({
+      next: (data) => {
+        this.branches = data;
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.error('Error fetching branches:', err);
+        this.error = 'Failed to load branches.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  viewBranchBookings(branch: BranchData): void {
+    this.selectedBranch = branch;
+    this.fetchBookings(branch.id);
+  }
+
+  backToBranches(): void {
+    this.selectedBranch = null;
+    this.bookings = [];
+    this.allBookings = [];
+    this.filteredBookings = [];
+    this.error = null;
+  }
+
+  fetchBookings(branchId: number): void {
+    this.isLoading = true;
+    this.bookingsService.getBranchBookings(branchId).subscribe({
+      next: (response) => {
+        if (response.isSuccess) {
+          this.allBookings = response.data;
+          this.uniqueStatuses = [...new Set(this.allBookings.map(b => b.status))];
+          this.applyFilters();
+        } else {
+          this.error = response.message || 'Failed to fetch bookings';
+        }
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.error('Error fetching bookings:', err);
+        this.error = 'An error occurred while fetching details.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  applyFilters(): void {
+    let result = [...this.allBookings];
+
+    // Filter by Search Text
+    if (this.searchText.trim()) {
+      const searchLower = this.searchText.toLowerCase();
+      result = result.filter(booking =>
+        booking.branchName.toLowerCase().includes(searchLower) ||
+        booking.status.toLowerCase().includes(searchLower)
+      );
     }
-  ];
+
+    // Filter by Status
+    if (this.selectedStatus) {
+      result = result.filter(booking => booking.status === this.selectedStatus);
+    }
+
+    this.filteredBookings = result;
+    this.bookings = this.filteredBookings;
+  }
 
   getStatusClass(status: string): string {
     const statusClasses: { [key: string]: string } = {
-      'Completed': 'status-completed',
-      'Confirmed': 'status-confirmed',
-      'No Show': 'status-no-show',
-      'Cancelled': 'status-cancelled'
+      'COMPLETED': 'status-completed',
+      'CONFIRMED': 'status-confirmed',
+      'NOSHOW': 'status-no-show',
+      'CANCELLED': 'status-cancelled'
     };
-    return statusClasses[status] || '';
+    return statusClasses[status] || 'status-default';
   }
 
   onSearch(): void {
-    console.log('Searching for:', this.searchText);
+    this.applyFilters();
   }
 
   onFilter(): void {
-    console.log('Filter clicked');
+    this.showFilterMenu = !this.showFilterMenu;
+  }
+
+  selectStatusFilter(status: string | null): void {
+    this.selectedStatus = status;
+    this.showFilterMenu = false;
+    this.applyFilters();
   }
 
   onPrevious(): void {

@@ -4,6 +4,10 @@ import { ActivatedRoute, RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { GymService } from '../../../../../services/gym.service';
 import { PlansService } from '../../../../../services/plans.service';
+import { SubscriptionService } from '../../../../../services/subscription.service';
+import { BookingService, Review } from '../../../../../services/booking.service'; // Added
+// Force rebuild
+import { FooterComponent } from '../../../../../shared/components/footer/footer.component';
 
 interface TimeSlot {
   time: string;
@@ -17,46 +21,61 @@ interface Schedule {
   status: string;
 }
 
+// Ensure this matches the API response structure if we are fetching details
 interface Plan {
+  id?: number; // Added optional ID
   name: string;
+  description?: string; // Added description
   credits: number;
   visits: number;
+  durationDays?: number; // Added duration
   recommended?: boolean;
 }
+
+/* ... existing interfaces ... */
 
 interface Amenity {
   icon: string;
   label: string;
 }
 
+import { AuthService } from '../../../../auth/services/auth.service';
+
 @Component({
   selector: 'app-gym-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, FooterComponent],
   templateUrl: './gym-detail.component.html',
   styleUrl: './gym-detail.component.css',
 })
 export class GymDetailComponent implements OnInit {
+  isLoggedIn = false;
+  readonly navLinks = [
+    { label: 'Find Gym', href: '/find-gym', isRoute: true },
+    { label: 'Plan', href: '/#plans', isRoute: true },
+    { label: 'About Us', href: '/#about', isRoute: true },
+    { label: 'Contact', href: '/#contact', isRoute: true },
+  ];
   gymId: string = '';
   activeTab: 'about' | 'facilities' | 'schedule' | 'plans' = 'schedule';
 
-  gymName = 'Powerhouse Gym';
-  rating = 4.7;
-  reviewCount = 312;
-  location = 'Downtown, Metropolis';
+  // Modal state
+  showModal = false;
+  modalMessage = '';
+  modalType: 'success' | 'error' = 'success';
+
+  gymName = '';
+  rating = 0;
+  reviewCount = 0;
+  location = '';
 
   selectedDate = '';
+  minDate = '';
   selectedTime = '';
   selectedPlan: Plan | null = null;
   totalCredits = 250;
 
-  images = [
-    'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&h=600&fit=crop',
-    'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=400&h=300&fit=crop',
-    'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400&h=300&fit=crop',
-    'https://images.unsplash.com/photo-1576610616656-d3aa5d1f4534?w=400&h=300&fit=crop',
-    'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=400&h=300&fit=crop',
-  ];
+  images: string[] = [];
 
   timeSlots: TimeSlot[] = [
     { time: '09:00 AM', label: '09:00 AM' },
@@ -67,41 +86,28 @@ export class GymDetailComponent implements OnInit {
     { time: '07:00 PM', label: '07:00 PM' },
   ];
 
-  schedules: Schedule[] = [
-    { day: 'Monday', openingTime: '06:00 AM', closingTime: '10:00 PM', status: 'Open' },
-    { day: 'Tuesday', openingTime: '06:00 AM', closingTime: '10:00 PM', status: 'Open' },
-    { day: 'Wednesday', openingTime: '06:00 AM', closingTime: '10:00 PM', status: 'Open' },
-    { day: 'Thursday', openingTime: '06:00 AM', closingTime: '10:00 PM', status: 'Open' },
-    { day: 'Friday', openingTime: '06:00 AM', closingTime: '09:00 PM', status: 'Open' },
-    { day: 'Saturday', openingTime: '08:00 AM', closingTime: '08:00 PM', status: 'Open' },
-    { day: 'Sunday', openingTime: '08:00 AM', closingTime: '06:00 PM', status: 'Closed Today' },
-  ];
+  schedules: Schedule[] = [];
 
-  plans: Plan[] = [
-    { name: 'Basic', credits: 125, visits: 10, recommended: false },
-    { name: 'Premium', credits: 250, visits: 20, recommended: true },
-    { name: 'Gold', credits: 375, visits: 30, recommended: false },
-  ];
+  plans: Plan[] = [];
 
-  amenities: Amenity[] = [
-    { icon: 'fitness', label: 'Free Weights' },
-    { icon: 'group', label: 'Group Classes' },
-    { icon: 'self_improvement', label: 'Yoga Studio' },
-    { icon: 'pool', label: 'Swimming Pool' },
-    { icon: 'shower', label: 'Showers & Lockers' },
-    { icon: 'local_parking', label: 'Free Parking' },
-  ];
+  amenities: Amenity[] = [];
+  aboutText = '';
+  reviews: Review[] = [];
 
-  aboutText = `Powerhouse Gym, located in the heart of Downtown Metro City, is a state-of-the-art facility dedicated to helping you achieve your fitness goals. We offer a wide range of equipment, expert trainers, and a motivating atmosphere. Whether you're a beginner or a seasoned athlete, Powerhouse Gym provides everything you need for a complete workout experience.`;
+  visitCreditsCost = 0;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private gymService: GymService,
-    private plansService: PlansService
-  ) {}
+    private plansService: PlansService,
+    private subscriptionService: SubscriptionService,
+    private authService: AuthService,
+    private bookingService: BookingService
+  ) { }
 
   ngOnInit(): void {
+    this.checkAuthStatus();
     this.gymId = this.route.snapshot.paramMap.get('id') || '';
     const idNum = Number(this.gymId);
     if (!idNum) return;
@@ -111,6 +117,7 @@ export class GymDetailComponent implements OnInit {
       next: (branch) => {
         this.gymName = branch.branchName;
         this.location = `${branch.city}, ${branch.address}`;
+        this.visitCreditsCost = branch.visitCreditsCost;
         this.images = (branch.images || []).map((img) =>
           this.gymService.getImageUrl(branch.branchName, img.imageName)
         );
@@ -135,12 +142,39 @@ export class GymDetailComponent implements OnInit {
 
     // Preload plans for this branch
     this.loadPlans(idNum);
+
+    // Load reviews
+    this.loadReviews(idNum);
+
+    // Set min date to today
+    // Set min date to today (Local time to avoid UTC issues)
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+    const day = today.getDate().toString().padStart(2, '0');
+    this.minDate = `${year}-${month}-${day}`;
+  }
+
+  private loadReviews(branchId: number): void {
+    this.bookingService.getReviewsByBranch(branchId).subscribe({
+      next: (data) => {
+        this.reviews = data;
+        this.reviewCount = data.length;
+        // Calculate average rating if needed
+        if (data.length > 0) {
+          const sum = data.reduce((acc, curr) => acc + curr.rating, 0);
+          this.rating = Math.round((sum / data.length) * 10) / 10;
+        }
+      },
+      error: (err) => console.error('Failed to load reviews', err)
+    });
   }
 
   private loadPlans(branchId: number): void {
     this.plansService.getPlansByBranch(branchId).subscribe({
       next: (plans) => {
         this.plans = plans.map((p) => ({
+          id: p.id, // Map ID
           name: p.name,
           credits: p.creditsCost,
           visits: p.visitsLimit,
@@ -149,6 +183,22 @@ export class GymDetailComponent implements OnInit {
       },
       error: (err) => console.error('Failed to load plans', err),
     });
+  }
+
+  checkAuthStatus(): void {
+    this.isLoggedIn = this.authService.isLoggedIn();
+  }
+
+  handleNav(link: any, event: Event) {
+    if (!link.isRoute) {
+      // Logic if needed
+    }
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.isLoggedIn = false;
+    this.router.navigate(['/']);
   }
 
   navigateToProfile(): void {
@@ -168,30 +218,99 @@ export class GymDetailComponent implements OnInit {
   }
 
   selectPlan(plan: Plan): void {
+    // Select loosely first to update UI immediately
     this.selectedPlan = plan;
+
+    // Fetch full details as requested
+    if (plan.id) {
+      this.plansService.getPlan(plan.id).subscribe({
+        next: (fullPlan) => {
+          // Update selectedPlan with detailed data
+          this.selectedPlan = {
+            id: fullPlan.id,
+            name: fullPlan.name,
+            description: fullPlan.description,
+            credits: fullPlan.creditsCost,
+            visits: fullPlan.visitsLimit,
+            durationDays: fullPlan.durationDays,
+            recommended: plan.recommended
+          };
+        },
+        error: (err) => console.error('Failed to fetch plan details', err)
+      });
+    }
   }
 
   reserveSpot(): void {
+    if (!this.isLoggedIn) {
+      alert('You must be logged in to reserve a spot. Please log in first.');
+      this.router.navigate(['/login']);
+      return;
+    }
+
     if (!this.selectedDate || !this.selectedTime) {
       alert('Please select a date and time');
       return;
     }
-    console.log('Reserving spot:', {
-      gym: this.gymName,
-      date: this.selectedDate,
-      time: this.selectedTime,
+
+    // Navigate to visit type selection
+    this.router.navigate(['/booking/choose-type'], {
+      queryParams: {
+        gymId: this.gymId, // Pass the Gym ID (Branch ID)
+        gymName: this.gymName,
+        date: this.selectedDate,
+        time: this.selectedTime,
+        cost: this.visitCreditsCost
+      }
     });
   }
 
   proceedToPayment(): void {
-    if (!this.selectedPlan) {
+    if (!this.isLoggedIn) {
+      alert('You must be logged in to subscribe to a plan. Please log in first.');
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    if (!this.selectedPlan || !this.selectedPlan.id) {
       alert('Please select a plan');
       return;
     }
-    console.log('Proceeding to payment:', {
-      plan: this.selectedPlan,
-      totalCredits: this.selectedPlan.credits,
+
+    const gymIdNum = Number(this.gymId);
+    if (!gymIdNum) return;
+
+    this.subscriptionService.createSubscription({
+      branchId: gymIdNum,
+      planId: this.selectedPlan.id
+    }).subscribe({
+      next: (success) => {
+        if (success) {
+          this.modalMessage = 'Subscription created successfully!';
+          this.modalType = 'success';
+          this.showModal = true;
+        } else {
+          this.modalMessage = 'Failed to create subscription. Please try again.';
+          this.modalType = 'error';
+          this.showModal = true;
+        }
+      },
+      error: (err) => {
+        console.error('Subscription error', err);
+        const msg = err?.error?.message || 'An error occurred while creating the subscription.';
+        this.modalMessage = msg;
+        this.modalType = 'error';
+        this.showModal = true;
+      }
     });
+  }
+
+  closeModal(): void {
+    this.showModal = false;
+    if (this.modalType === 'success') {
+      // Navigate to subscriptions page or booking history after success
+      this.router.navigate(['/booking-history']);
+    }
   }
 
   // =====================

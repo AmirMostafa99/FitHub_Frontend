@@ -76,7 +76,7 @@ export interface Gym {
 export class GymService {
   private apiUrl = `${environment.apiBaseUrl}/UserBranch`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   private getHeaders(): HttpHeaders {
     const token = localStorage.getItem('fitHubToken');
@@ -184,7 +184,7 @@ export class GymService {
         branch.images && branch.images.length > 0
           ? this.getImageUrl(branch.branchName, branch.images[0].imageName)
           : 'assets/default-gym.jpg',
-      rating: 4.5, // Default rating - update when backend provides it
+      rating: 0, // Default rating - update when backend provides it
       reviewCount: 0, // Default - update when backend provides it
       location: `${branch.city}`,
       activities: this.parseAmenities(branch.amenitiesAvailable),
@@ -208,8 +208,8 @@ export class GymService {
     // We construct the URL to serve from backend
     if (!branchName || !imageName) return 'assets/default-gym.jpg';
 
-    // URL format: http://localhost:24357/images/Gym/Oxygen/569279a6-260d-4134-bca5-e4893197832a-Oxygen.jfif
-    return `http://localhost:24357/images/Gym/${encodeURIComponent(
+    // URL format: http://localhost:5024/images/Gym/Oxygen/569279a6...
+    return `http://localhost:5024/images/Gym/${encodeURIComponent(
       branchName
     )}/${encodeURIComponent(imageName)}`;
   }

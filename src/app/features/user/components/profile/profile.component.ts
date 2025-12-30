@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { HeaderComponent } from '../../../../shared/components/header/header.component';
 import { UsersService, User, UpdateUserRequest } from '../../../../services/users.service';
+import { EGYPT_CITIES } from '../../../../shared/data/cities';
 
 @Component({
   selector: 'app-profile',
@@ -18,15 +19,31 @@ export class ProfileComponent implements OnInit {
   isLoading = true;
   errorMessage = '';
   showSidebarMenu = false;
+  userBalance: number = 0;
+  cities = EGYPT_CITIES;
 
   constructor(
     private fb: FormBuilder,
     private router: Router,
     private usersService: UsersService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadUserProfile();
+    this.loadWalletBalance();
+  }
+
+  loadWalletBalance(): void {
+    this.usersService.getWalletBalance().subscribe({
+      next: (response) => {
+        if (response.isSuccess && response.data) {
+          this.userBalance = response.data.balance;
+        }
+      },
+      error: (error) => {
+        console.error('Error loading wallet balance:', error);
+      },
+    });
   }
 
   loadUserProfile(): void {

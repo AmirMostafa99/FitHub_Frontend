@@ -18,16 +18,21 @@ export class AuthService {
   private readonly TOKEN_KEY = 'fitHubToken';
   private readonly USER_KEY = 'fitHubUser';
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   // ================= Register =================
   registerUser(dto: RegisterUserDto): Observable<UserResponseDto> {
     return this.http
-      .post<ResponseViewModel<UserResponseDto>>(`${this.base}/register-user`, dto)
+      .post<ResponseViewModel<UserResponseDto>>(
+        `${this.base}/register-user`,
+        dto,
+        { headers: { accept: '*/*' } }
+      )
       .pipe(
         map((res) => {
-          if (!res.isSuccess) throw new Error(res.message || 'Registration failed');
-          return res.data as UserResponseDto;
+          const { isSuccess, message, data } = this.parseResponse(res);
+          if (!isSuccess) throw new Error(message || 'Registration failed');
+          return data as UserResponseDto;
         })
       );
   }
@@ -44,11 +49,16 @@ export class AuthService {
     formData.append('ConfirmPassword', dto.confirmPassword);
 
     return this.http
-      .post<ResponseViewModel<UserResponseDto>>(`${this.base}/register-owner`, formData)
+      .post<ResponseViewModel<UserResponseDto>>(
+        `${this.base}/register-owner`,
+        formData,
+        { headers: { accept: '*/*' } }
+      )
       .pipe(
         map((res) => {
-          if (!res.isSuccess) throw new Error(res.message || 'Business registration failed');
-          return res.data as UserResponseDto;
+          const { isSuccess, message, data } = this.parseResponse(res);
+          if (!isSuccess) throw new Error(message || 'Business registration failed');
+          return data as UserResponseDto;
         })
       );
   }
@@ -56,62 +66,99 @@ export class AuthService {
   // ================= Login =================
   login(email: string, password: string): Observable<string> {
     const dto: LoginDto = { email, password };
+    console.log('🔄 Calling login with body:', dto);
 
-    return this.http.post<ResponseViewModel<TokenResponseDto>>(`${this.base}/login`, dto).pipe(
-      map((res) => {
-        console.log('🔍 Raw API Response:', JSON.stringify(res, null, 2));
+    return this.http
+      .post<ResponseViewModel<TokenResponseDto>>(
+        `${this.base}/login`,
+        dto,
+        { headers: { accept: '*/*' } }
+      )
+      .pipe(
+        map((res) => {
+          console.log('🔍 Raw API Response:', JSON.stringify(res, null, 2));
+          const { isSuccess, message, data } = this.parseResponse(res);
 
-        if (!res.isSuccess) throw new Error(res.message || 'Login failed');
+          if (!isSuccess) throw new Error(message || 'Login failed');
 
-        const token = res.data?.token;
-        console.log('🔍 Extracted Token:', token);
-        console.log('🔍 Token type:', typeof token);
+          const token = data?.token;
+          console.log('🔍 Extracted Token:', token);
 
-        if (!token) throw new Error('Token not found in response');
+          if (!token) throw new Error('Token not found in response');
 
-        // خزن التوكن تلقائياً
-        console.log('🔍 Before setToken - localStorage:', localStorage.getItem(this.TOKEN_KEY));
-        this.setToken(token);
-        console.log('🔍 After setToken - localStorage:', localStorage.getItem(this.TOKEN_KEY));
-
-        return token;
-      })
-    );
+          this.setToken(token);
+          return token;
+        })
+      );
   }
 
   // ================= OTP =================
   sendOtp(email: string): Observable<{ success: boolean; message: string }> {
-    return this.http.post<ResponseViewModel<string>>(`${this.base}/send-otp`, { email }).pipe(
-      map((res) => ({
-        success: res.isSuccess,
-        message: res.message,
-      }))
-    );
+    return this.http
+      .post<ResponseViewModel<string>>(
+        `${this.base}/send-otp`,
+        { email },
+        { headers: { accept: '*/*' } }
+      )
+      .pipe(
+        map((res) => {
+          const { isSuccess, message } = this.parseResponse(res);
+          return {
+            success: !!isSuccess,
+            message: message || '',
+          };
+        })
+      );
+  }
+
+  resendOtp(email: string): Observable<{ success: boolean; message: string }> {
+    return this.http
+      .post<ResponseViewModel<string>>(
+        `${this.base}/resend-otp`,
+        { email },
+        { headers: { accept: '*/*' } }
+      )
+      .pipe(
+        map((res) => {
+          const { isSuccess, message } = this.parseResponse(res);
+          return {
+            success: !!isSuccess,
+            message: message || '',
+          };
+        })
+      );
   }
 
   verifyOtp(email: string, otp: string): Observable<{ success: boolean; message: string }> {
     return this.http
-      .post<ResponseViewModel<string>>(`${this.base}/verify-otp`, {
-        email,
-        otp,
-      })
+      .post<ResponseViewModel<string>>(
+        `${this.base}/verify-otp`,
+        { email, otp },
+        { headers: { accept: '*/*' } }
+      )
       .pipe(
-        map((res) => ({
-          success: res.isSuccess,
-          message: res.message,
-        }))
+        map((res) => {
+          const { isSuccess, message } = this.parseResponse(res);
+          return {
+            success: !!isSuccess,
+            message: message || '',
+          };
+        })
       );
   }
 
   // ================= Password =================
   forgotPassword(email: string): Observable<void> {
     return this.http
-      .post<ResponseViewModel<string>>(`${this.base}/forgot-password`, {
-        email,
-      })
+      .post<ResponseViewModel<string>>(
+        `${this.base}/forgot-password`,
+        { email },
+        { headers: { accept: '*/*' } }
+      )
       .pipe(
         map((res) => {
-          if (!res.isSuccess) throw new Error(res.message || 'Forgot password failed');
+          const { isSuccess, message } = this.parseResponse(res);
+          if (!isSuccess) throw new Error(message || 'Forgot password failed');
         })
       );
   }
@@ -121,19 +168,44 @@ export class AuthService {
     otp: string,
     newPassword: string,
     confirmPassword: string
-  ): Observable<void> {
+  ): Observable<{ success: boolean; message: string }> {
+    // Standardize to match the working CURL request (lowercase keys)
+    const body = {
+      email,
+      otp,
+      newPassword,
+      confirmPassword
+    };
+    console.log('🔄 Calling reset-password with body:', body);
+
     return this.http
-      .post<ResponseViewModel<string>>(`${this.base}/reset-password`, {
-        email,
-        otp,
-        newPassword,
-        confirmPassword,
+      .post<ResponseViewModel<string>>(`${this.base}/reset-password`, body, {
+        headers: {
+          'Content-Type': 'application/json',
+          'accept': '*/*'
+        },
       })
       .pipe(
         map((res) => {
-          if (!res.isSuccess) throw new Error(res.message || 'Reset password failed');
+          console.log('✅ Reset password response:', res);
+          const { isSuccess, message } = this.parseResponse(res);
+          return {
+            success: !!isSuccess,
+            message: message || '',
+          };
         })
       );
+  }
+
+  /**
+   * Helper to normalize response keys (handles both camelCase and PascalCase)
+   */
+  private parseResponse<T>(res: ResponseViewModel<T>): { isSuccess: boolean; message: string; data: T | null } {
+    return {
+      isSuccess: !!(res.isSuccess ?? res.IsSuccess),
+      message: (res.message ?? res.Message) || '',
+      data: (res.data ?? res.Data) || null
+    };
   }
 
   // ================= Token Management =================
@@ -166,14 +238,54 @@ export class AuthService {
 
   // ================= Get Current User من الـ API =================
   getCurrentUser(): Observable<UserResponseDto> {
-    return this.http.get<ResponseViewModel<UserResponseDto>>(`${this.base}/current-user`).pipe(
-      map((res) => {
-        if (!res.isSuccess) throw new Error(res.message || 'Failed to get user');
-        const user = res.data as UserResponseDto;
-        // خزن بيانات المستخدم
-        this.setUser(user);
-        return user;
-      })
-    );
+    return this.http
+      .get<ResponseViewModel<UserResponseDto>>(
+        `${this.base}/current-user`,
+        { headers: { accept: '*/*' } }
+      )
+      .pipe(
+        map((res) => {
+          if (!res.isSuccess) throw new Error(res.message || 'Failed to get user');
+          const user = res.data as UserResponseDto;
+          // خزن بيانات المستخدم
+          this.setUser(user);
+          return user;
+        })
+      );
+  }
+
+  // ================= Token Utilities =================
+  private getDecodedToken(token: string): any {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        window
+          .atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+      return JSON.parse(jsonPayload);
+    } catch (e) {
+      console.error('Error decoding token', e);
+      return null;
+    }
+  }
+
+  getRoleFromToken(token: string): string | null {
+    const decoded = this.getDecodedToken(token);
+    if (!decoded) return null;
+
+    // Check known claims for role
+    // Microsoft identity standard claim
+    if (decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role']) {
+      return decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+    }
+    // Standard role claim
+    if (decoded['role']) {
+      return decoded['role'];
+    }
+    return null;
   }
 }

@@ -18,6 +18,7 @@ import { BillingComponent } from './features/user/components/billing/billing.com
 import { ChoosePlanPaymentComponent } from './features/user/components/choose-plan-payment/choose-plan-payment.component';
 import { PaymentSuccessComponent } from './features/user/components/payment-success/payment-success.component';
 import { PaymentFailedComponent } from './features/user/components/payment-failed/payment-failed.component';
+import { ChooseVisitTypeComponent } from './features/user/components/bookings/choose-visit-type/choose-visit-type.component';
 
 import { AdminDashboardComponent } from './features/admin/pages/dashboard/dashboard.component';
 import { ManageGymsComponent } from './features/admin/pages/manage-gyms/manage-gyms.component';
@@ -35,7 +36,7 @@ import { ManageUsersComponent } from './features/admin/pages/manage-users/manage
 import { UserDetailsComponent } from './features/admin/pages/user-details/user-details.component';
 import { EditUserComponent } from './features/admin/pages/edit-user-details/edit-user-details.component';
 
-import { ReportsComponent } from './features/admin/pages/reports/reports.component';
+import { SubscriptionComponent } from './features/admin/pages/subscription/subscription.component';
 import { ReportDetailsComponent } from './features/admin/pages/report-details/report-details.component';
 
 
@@ -58,6 +59,18 @@ import { BranchesListComponent } from './features/gym-owner/components/branch-li
 import { EditPlanComponent } from './features/gym-owner/components/edit-plan/edit-plan.component';
 
 import { BookingsComponent } from './features/gym-owner/components/booking/booking.component';
+import { GymOwnerSubscriptionsComponent } from './features/gym-owner/components/subscriptions/subscriptions.component';
+import { SettlementsComponent } from './features/gym-owner/components/settlements/settlements.component';
+import { GymOwnerProfileComponent } from './features/gym-owner/components/profile/profile.component';
+import { AdminProfileComponent } from './features/admin/pages/profile/profile.component';
+import { AdminBookingsComponent } from './features/admin/pages/bookings/bookings.component';
+import { AdminSettlementsComponent } from './features/admin/pages/settlements/settlements.component';
+import { CheckInComponent } from './features/staff/components/check-in/check-in.component';
+import { StaffLayoutComponent } from './layouts/staff-dashboard/staff-dashboard.component';
+import { VisitLogComponent } from './features/staff/components/visit-log/visit-log.component';
+import { StaffProfileComponent } from './features/staff/components/profile/profile.component';
+import { BranchImagesComponent } from './features/gym-owner/components/branch-images/branch-images.component';
+
 export const routes: Routes = [
   { path: '', component: HomeComponent },
   { path: 'login', component: LoginComponent },
@@ -75,10 +88,12 @@ export const routes: Routes = [
   { path: 'billing', component: BillingComponent },
   { path: 'choose-plan-payment', component: ChoosePlanPaymentComponent },
   { path: 'payment-success', component: PaymentSuccessComponent },
+  { path: 'payment-status', component: PaymentSuccessComponent },
   { path: 'payment-failed', component: PaymentFailedComponent },
   { path: 'subscriptions', component: SubscriptionsComponent },
   { path: 'subscriptions/manage/:id', component: ManageSubscriptionComponent },
   { path: 'booking-confirmation', component: BookingConfirmationComponent },
+  { path: 'booking/choose-type', component: ChooseVisitTypeComponent },
   { path: 'booking-history', component: BookingHistoryComponent },
 
 
@@ -97,8 +112,11 @@ export const routes: Routes = [
         path: 'gym-details/:id',
         component: GymDetailsComponent,
       },
-      { path: 'reports', component: ReportsComponent },
-      { path: 'report-details/:id', component: ReportDetailsComponent }
+      { path: 'subscription', component: SubscriptionComponent },
+      { path: 'report-details/:id', component: ReportDetailsComponent },
+      { path: 'profile', component: AdminProfileComponent },
+      { path: 'bookings', component: AdminBookingsComponent },
+      { path: 'settlements', component: AdminSettlementsComponent }
     ],
   },
   {
@@ -109,6 +127,7 @@ export const routes: Routes = [
       { path: 'add-branch', component: AddBranchComponent },
       { path: 'branch-details/:id', component: BranchDetailsComponent },
       { path: 'edit-branch/:id', component: EditBranchComponent },
+      { path: 'branch-images/:id', component: BranchImagesComponent }, // Added route
       { path: 'subscription-plans/:id', component: SubscriptionPlansComponent },
       { path: 'add-subscription-plan', component: AddSubscriptionPlansComponent },
       { path: 'manage-staff/:id', component: ManageStaffComponent },
@@ -120,7 +139,20 @@ export const routes: Routes = [
       { path: 'branches-list', component: BranchesListComponent },
       { path: 'assign-staff/:id', component: AssignUnassignedStaffComponent },
       { path: 'edit-plan/:planId', component: EditPlanComponent },
-      { path: 'bookings', component: BookingsComponent }
+      { path: 'bookings', component: BookingsComponent },
+      { path: 'subscriptions', component: GymOwnerSubscriptionsComponent },
+      { path: 'settlements', component: SettlementsComponent },
+      { path: 'profile', component: GymOwnerProfileComponent }
+    ]
+  },
+  {
+    path: 'staff',
+    component: StaffLayoutComponent,
+    children: [
+      { path: 'check-in', component: CheckInComponent },
+      { path: 'visit-log', component: VisitLogComponent },
+      { path: 'profile', component: StaffProfileComponent },
+      { path: '', redirectTo: 'check-in', pathMatch: 'full' }
     ]
   },
 
